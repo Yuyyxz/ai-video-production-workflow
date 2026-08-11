@@ -53,20 +53,22 @@ def main():
     for d in dupes:
         errors.append(f"重复 asset_id: {d}")
 
-    # 检查文件是否存在 (如果登记了文件名)
+    # 检查文件是否存在 (note 字段以媒体扩展名结尾时视为文件名)
+    media_exts = (".png", ".jpg", ".jpeg", ".mp4", ".mp3", ".wav", ".srt", ".mov", ".webm")
     for i, row in enumerate(rows, 1):
-        if row.get("note") and row["note"].endswith((".png", ".jpg", ".mp4", ".mp3", ".srt", ".csv", ".md")):
-            fname = row["note"]
-            # note 可能是文件名或描述, 只在像文件名时检查
-            if "/" in fname or "\\" in fname or fname.startswith(("CHR", "VD", "SB", "AU", "KF", "FIN")):
-                # 在项目里递归找
-                found = False
-                for root, _, files in os.walk(proj):
-                    if fname in files:
-                        found = True
-                        break
-                if not found:
-                    warnings.append(f"asset {row['asset_id']}: 文件 '{fname}' 未找到")
+        note = (row.get("note") or "").strip()
+        fname = note
+        # note 可能是 "路径/文件名" 或纯文件名; 提取 basename
+        base = os.path.basename(fname.replace("\\", "/"))
+        if base.lower().endswith(media_exts):
+            # 在项目里递归找
+            found = False
+            for root, _, files in os.walk(proj):
+                if base in files:
+                    found = True
+                    break
+            if not found:
+                errors.append(f"asset {row['asset_id']}: 文件 '{base}' 未找到")
 
     if errors:
         print("❌ 错误:")

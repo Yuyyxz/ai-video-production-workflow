@@ -17,7 +17,15 @@ def main():
         sys.exit(1)
     proj = os.path.abspath(sys.argv[1])
     concat_list = os.path.join(proj, "06-edit", "concat-list.txt")
-    videos_dir = os.path.join(proj, "05-assets", "videos")
+    # 视频目录自动探测: 优先 05-assets/videos (工作流标准), 回退 05-videos (kling-drama 旧布局)
+    videos_dir = None
+    for cand in [os.path.join(proj, "05-assets", "videos"), os.path.join(proj, "05-videos")]:
+        if os.path.isdir(cand):
+            videos_dir = cand
+            break
+    if videos_dir is None:
+        print(f"错误: 找不到视频目录 (05-assets/videos 或 05-videos) 在 {proj}")
+        sys.exit(1)
     versions_dir = os.path.join(proj, "06-edit", "versions")
 
     if not os.path.exists(concat_list):

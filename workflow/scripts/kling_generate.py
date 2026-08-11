@@ -121,7 +121,13 @@ def main():
         print("错误: 未找到 KLING_API_KEY")
         sys.exit(1)
 
-    videos_dir = os.path.join(proj, "05-assets", "videos")
+    videos_dir = None
+    for cand in [os.path.join(proj, "05-assets", "videos"), os.path.join(proj, "05-videos")]:
+        if os.path.isdir(cand):
+            videos_dir = cand
+            break
+    if videos_dir is None:
+        videos_dir = os.path.join(proj, "05-assets", "videos")
     os.makedirs(videos_dir, exist_ok=True)
 
     log_path = os.path.join(proj, "05-assets", "generation_log.md")
