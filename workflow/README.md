@@ -90,10 +90,48 @@ P0 立项 → P1 剧本 → P2 角色/世界观 → P3 分镜
 | `kling_generate.py` | 可灵批量生成(轮询/重试/日志) |
 | `concat_videos.py` | ffmpeg 顺序拼接 |
 | `extract_frames.py` | 尾帧/关键帧提取 |
+| `qa_tech.py` | 成片技术质检(黑帧/冻结/静音/响度/分辨率, 纯 ffmpeg 无需视觉, 支持 --fix 自动修分辨率) |
+
+## 实测验证
+
+> 2026-08 用真实素材 + 真实项目完整压测, 全部通过。
+
+### 1. 脚本全链路(用 kling-drama 示例项目《视线》3 段真实视频)
+
+| 脚本 | 实测结果 |
+|------|---------|
+| `extract_frames.py` | ✅ 提取尾帧 1916×1080 |
+| `concat_videos.py` | ✅ 3段→15.17s 成片(21.6MB) |
+| `manifest_check.py` | ✅ 抓到 ghost.mp4 缺失(检测有效) |
+| `kling_generate.py` | ✅ dry-run + 真实提交(走到余额报错 429/1102, 契约正确) |
+| `qa_tech.py` | ✅ 抓出可灵真实尺寸 1916×1080 不足 1920 的硬伤, --fix 规整到 1920×1080 |
+
+### 2. LumenX Studio 端到端(本地部署 + 可灵 API 2.0 适配)
+
+- ✅ 前后端跑通(后端 17177 + 前端 3008), DeepSeek 驱动 LLM 层
+- ✅ 可灵适配 API 2.0(认证 Bearer 单 key / 路径式端点 / 三层请求体), 契约验证走到余额报错
+- ✅ 风格预设「新海诚光·2000年代中国」注入 style_presets.json, 后端 API 返回
+- ✅ 三主角人设(陈汉升/沈幼楚/萧容鱼)手动注入, 从《我真没想重生啊》小说提取
+- ✅ LLM 剧本分析: 小说第一段 → 7 个分镜(景别/运镜/动作到部位级), 导演质量好
+
+### 3. 可灵 API 2.0 契约验证
+
+```
+HTTP 429: {"code":1102, "message":"Account balance not enough"}
+```
+
+鉴权 ✅(Bearer 被接受, 非 401) / 路径 ✅(/image-to-video/kling-3.0, 非 404) / 格式 ✅(三层 body, 非 400) / 业务层 ✅(余额不足)。充值后即可出片。
+
+### 4. 关键发现
+
+- **可灵实际生成尺寸是 1916×1080, 不足 1920** — 人眼看不出, 但创投申报分辨率规则会打回, qa_tech.py --fix 可自动规整
+- **LumenX 部署有 6 个依赖坑**(见 skill lumenx-studio), 已全部解决并记录
 
 ## 相关项目
 
 - [kling-prompt-engineering (KPE)](https://github.com/Yuyyxz/kling-prompt-engineering) — 导演级可灵提示词工程库,本工作流的方法论层
+- [Master-director](https://github.com/liangie7420/Master-director) — 导演方法论(四大一致性机制/题材执导手册), 已整合为 Hermes skill `master-director`
+- [LumenX](https://github.com/alibaba/lumenx) — AI 短剧生产平台, 本地部署 + 可灵 API 2.0 适配(见 skill `lumenx-studio`)
 
 ## License
 
