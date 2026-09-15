@@ -90,8 +90,8 @@ ai-project/
 ## 初始化
 
 ```bash
-# 一键创建新项目
-python workflow/scripts/init_project.py 项目名
+# 一键创建新项目 (在本仓库根目录执行)
+python scripts/init_project.py 项目名
 ```
 
 ## 与现有资产的关系

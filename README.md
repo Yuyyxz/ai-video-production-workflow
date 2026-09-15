@@ -27,19 +27,20 @@
 
 ```bash
 # 1. 初始化一个项目
-python workflow/scripts/init_project.py 我的短剧 --type 短剧集 --duration 600
+python scripts/init_project.py 我的短剧 --type 短剧集 --duration 600
 
 # 2. 打开项目状态卡, 开始 P0 立项
 #    my-drama/PROJECT_STATUS.md
 
-# 3. 按 workflow/04-pipeline-stages.md 的 8 阶段推进
-#    每阶段完成过质量门禁(workflow/05-quality-gates.md)
+# 3. 按 04-pipeline-stages.md 的 8 阶段推进
+#    每阶段完成过质量门禁(05-quality-gates.md)
 ```
 
 ## 目录结构
 
 ```
-workflow/
+.                           # 仓库根 (ai-project/workflow/)
+├── AGENTS.md                  # agent 协作规则
 ├── 01-asset-numbering.md      # 资产编号体系
 ├── 02-project-status-card.md  # 项目状态卡模板
 ├── 03-directory-structure.md  # 项目目录结构
@@ -47,7 +48,7 @@ workflow/
 ├── 05-quality-gates.md        # 质量门禁/验收标准
 ├── 06-toolchain.md            # 工具链选型
 ├── 07-templates/              # 10个模板(角色卡/剧本/分镜/音色/质检...)
-└── scripts/                   # 5个自动化脚本
+└── scripts/                   # 6个自动化脚本
 ```
 
 ## 8 阶段流水线
