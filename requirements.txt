@@ -1,0 +1,5 @@
+# QA 门禁工具链依赖 (Gate-A/B)
+# 安装: python -m pip install -r requirements.txt
+scenedetect>=0.7        # BSD-3, 镜头切点检测 (会带 opencv-python)
+requests>=2.31          # qa_judge.py VLM 薄客户端
+pytest>=8.0             # tests/ 离线测试
