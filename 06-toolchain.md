@@ -31,6 +31,33 @@
 - 黑帧检测: ffmpeg -vf blackdetect
 - 已安装: ffmpeg 8.1.1-full_build
 
+### 质量门禁 — qa_scenes / qa_judge / qa_gate ✅ (2026-09-27 实测, 离线 pytest 30 例全绿)
+- 依赖: `pip install -r requirements.txt`（scenedetect BSD-3, 会带 opencv-python）
+- **Gate-A 技术门（全量, 零成本, 硬失败）**:
+  ```bash
+  python scripts/qa_tech.py shot.mp4        # 黑帧/冻结/静音/响度/分辨率
+  python scripts/qa_scenes.py shot.mp4      # 镜头切点数(>1判异常)/音画时长差(>0.5s fail)/尾静音(>2s warn)
+  ```
+  生成镜头理论上只应有 0~1 个切点（PySceneDetect ContentDetector threshold=27.0），>1 = 镜头内意外跳变。尾静音超 2s 是 TTS 尾巴截断信号，只警告不翻车。
+- **Gate-B 审美门（VLM-as-judge, 成本漏斗）**:
+  ```bash
+  # 默认离线: 必须 --mock(确定性假响应, 测试用) 或 --live(真调 VLM) 二选一
+  python scripts/qa_judge.py shot.mp4 --level L2 --mock --frames f1.png f2.png --prompt "镜头描述"
+  ```
+  - rubric = VideoScore 五维各 1-4 分：visual_quality / temporal_consistency / dynamic_degree / text_video_alignment / factual_consistency
+  - 打分法 = Q-Align 离散文本等级：VLM 先输出 excellent/good/fair/poor/bad 再映射 5..1（1-4 制下 poor/bad 合并为 1），比直接要数字稳
+  - prompt = MT-bench single-v1 三段式（评分标准 → 镜头文本+抽帧 → 强制只输出 JSON）
+  - 级别：`L0` 跳过 / `L1` 抽帧全量粗筛（overall 等级, 边界分进 L2）/ `L2` 逐镜五维评审
+  - live 环境变量（代码不落 key）: `QA_JUDGE_BASE_URL`（默认 DashScope 兼容模式）/ `QA_JUDGE_MODEL`（默认 qwen-vl-max）/ `QA_JUDGE_API_KEY`（如从 D:\hermes\.env 导出）
+  - 退出码: pass=0 / hold=1 / 配置错误=2；报告落 `<视频名>_qa_judge.json`
+- **串联 CLI（汇总 pass/hold/fail + 扣分明细）**:
+  ```bash
+  python scripts/qa_gate.py shot_01.mp4 shot_02.mp4 --level L2 --mock --min-resolution 1920x1080
+  ```
+  Gate-A 全量先跑，任一 fail 直接拦下**不花 VLM 钱**；报告 `qa_gate_report.json`，退出码 全pass=0 / 有hold=1 / 有fail=2。
+- 测试: `python -m pytest -q`（lavfi 合成夹具 + mock HTTP，零真实 VLM/网络/可灵请求）
+- ⚠️ 阈值（切点≤1 / 时长差 0.5s / 尾静音 2s / judge min-total 2.5 min-dim 2.0）均为**初始待校准值**，上线后用人工标过的好/差样本回测校准。
+
 ### 精修 — 剪映 / DaVinci ✅
 - 用途: 转场、调色、字幕精修
 - 用户手动操作
@@ -65,11 +92,12 @@
 
 **推荐路径**: 剪映自动字幕(快) → 校对 → 导出 srt
 
-### 成片质检 🔄
+### 成片质检 ✅ (已落地, 见上方"质量门禁"小节)
 | 方案 | 说明 |
 |------|------|
-| ffmpeg blackdetect | 黑帧检测(已有) |
-| 人脸一致性 | 抽帧 + 人工对比角色卡(当前) |
+| qa_tech.py + qa_scenes.py | Gate-A 技术门: 黑帧/冻结/静音/响度/分辨率 + 切点/音画时长差/尾静音, 全量零成本 |
+| qa_judge.py (L1/L2) | Gate-B 审美门: 抽帧粗筛 + VLM 五维 rubric 逐镜评审, 按漏斗控成本 |
+| 人脸一致性 | 抽帧 + 人工对比角色卡(VLM 评审不能替代人工终审) |
 | **ai0-video-creator** | 含质量审计工作台, 可参考其 audit 思路 |
 
 ### 角色一致性 🔄
@@ -107,7 +135,7 @@
 | 拼接 | ffmpeg | ✅ | | ✅ |
 | 精修 | 剪映/DaVinci | | ✅ | ✅ |
 | 字幕 | 剪映 → srt | 🔄 | | 🔄 |
-| 质检 | ffmpeg + 抽检 | ✅ | ✅ | ✅ |
+| 质检 | qa_gate.py 串联 (A 技术门全量 + B 审美门漏斗) | ✅ | 抽检/终审 | ✅ |
 
 ---
 
