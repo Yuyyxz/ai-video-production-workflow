@@ -27,18 +27,12 @@ import json
 import time
 import urllib.request
 import urllib.parse
-import ssl
 
 API_BASE = "https://api-beijing.klingai.com"
 # 默认模型 ID (路径式, 新版标准) — 旧 "kling-v3" 映射到 factory/此处保留
 DEFAULT_MODEL = "kling-3.0"
 # 参数翻译: 旧 std/pro → 新版 resolution 值
 RESOLUTION_MAP = {"std": "720p", "standard": "720p", "pro": "1080p"}
-
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
-
 
 def get_api_key():
     """从环境变量或项目根 .env 读取 KLING_API_KEY (不硬编码本机路径)."""
@@ -66,7 +60,7 @@ def api_post(path, payload, api_key):
     req.add_header("Authorization", f"Bearer {api_key}")
     req.add_header("Content-Type", "application/json")
     try:
-        with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             return json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
         body = e.read().decode(errors="replace")
@@ -78,7 +72,7 @@ def api_get(path, api_key):
     req = urllib.request.Request(url)
     req.add_header("Authorization", f"Bearer {api_key}")
     try:
-        with urllib.request.urlopen(req, timeout=60, context=ctx) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             return json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
         body = e.read().decode(errors="replace")
@@ -213,7 +207,7 @@ def main():
                 out_name = f"{sid}_video.mp4"
                 out_path = os.path.join(videos_dir, out_name)
                 req = urllib.request.Request(url)
-                with urllib.request.urlopen(req, timeout=120, context=ctx) as r:
+                with urllib.request.urlopen(req, timeout=120) as r:
                     with open(out_path, "wb") as out:
                         out.write(r.read())
                 print(f"  ✅ {out_path}")
